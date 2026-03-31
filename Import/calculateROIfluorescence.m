@@ -2,10 +2,10 @@
 %UNTITLED3 Summary of this function goes here
 % SDL 03/2026 
 if ~exist('thisAnimal', 'var')
-    thisAnimal = 'M25136';
+    thisAnimal = 'M25137';
 end
 if ~exist('thisSession', 'var')
-    thisSession = '20260227';
+    thisSession = '20260317';
 end
 if ~exist('thisFileName', 'var')
     thisFileName = 'Position';

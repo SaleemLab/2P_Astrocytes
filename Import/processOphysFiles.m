@@ -2,10 +2,10 @@
 % SDL 03/2026
 % Default options
 if ~exist('thisAnimal', 'var')
-    thisAnimal = 'M25134';
+    thisAnimal = 'M25138';
 end
 if ~exist('thisSession', 'var')
-    thisSession = '20260224';
+    thisSession = '20260225';
 end
 if ~exist('thisFileName', 'var')
     thisFileName = 'Position';

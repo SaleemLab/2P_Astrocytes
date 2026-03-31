@@ -255,4 +255,79 @@ refFileName = fullfile(OPhysPath,append(upper(thisAnimal),'_',thisFileName,'_',t
 
 generateRef4Registration(refFileName, refSlices, nPlanes, saveDir);
 
+%% Generate reference file for M25134 Position
+thisAnimal = 'M25135';
+thisSession = '20260304';
+thisFileName = 'Position';
+thisAcquisition = '_00001_';
+nPlanes = 4;
+
+% which file is taken for registration
+thisTiffFile = '00014';
+% which and how many slices are averaged
+refSlices = [1 300];
+
+OPhysPath = fullfile(serverPath,'DATA','SUBJECTS',upper(thisAnimal),'OPhys',upper(thisSession));
+saveDir = fullfile(OPhysPath,'ReferencePlanes',append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition));
+refFileName = fullfile(OPhysPath,append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition,thisTiffFile,'.tif'));
+
+
+generateRef4Registration(refFileName, refSlices, nPlanes, saveDir);
+%% Generate reference file for M25139 Position
+thisAnimal = 'M25139';
+thisSession = '20260226';
+thisFileName = 'Position';
+thisAcquisition = '_00001_';
+nPlanes = 4;
+
+% which file is taken for registration
+thisTiffFile = '00011';
+% which and how many slices are averaged
+refSlices = [1 300];
+
+OPhysPath = fullfile(serverPath,'DATA','SUBJECTS',upper(thisAnimal),'OPhys',upper(thisSession));
+saveDir = fullfile(OPhysPath,'ReferencePlanes',append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition));
+refFileName = fullfile(OPhysPath,append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition,thisTiffFile,'.tif'));
+
+
+generateRef4Registration(refFileName, refSlices, nPlanes, saveDir);
+
+%% Generate reference file for M25139 Position
+thisAnimal = 'M25138';
+thisSession = '20260225';
+thisFileName = 'Position';
+thisAcquisition = '_00001_';
+nPlanes = 4;
+
+% which file is taken for registration
+thisTiffFile = '00011';
+% which and how many slices are averaged
+refSlices = [1 300];
+
+OPhysPath = fullfile(serverPath,'DATA','SUBJECTS',upper(thisAnimal),'OPhys',upper(thisSession));
+saveDir = fullfile(OPhysPath,'ReferencePlanes',append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition));
+refFileName = fullfile(OPhysPath,append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition,thisTiffFile,'.tif'));
+
+
+generateRef4Registration(refFileName, refSlices, nPlanes, saveDir);
+
+%% Generate reference file for M25139 Position
+thisAnimal = 'M25138';
+thisSession = '20260228';
+thisFileName = 'Position';
+thisAcquisition = '_00001_';
+nPlanes = 4;
+
+% which file is taken for registration
+thisTiffFile = '00006';
+% which and how many slices are averaged
+refSlices = [1 300];
+
+OPhysPath = fullfile(serverPath,'DATA','SUBJECTS',upper(thisAnimal),'OPhys',upper(thisSession));
+saveDir = fullfile(OPhysPath,'ReferencePlanes',append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition));
+refFileName = fullfile(OPhysPath,append(upper(thisAnimal),'_',thisFileName,'_',thisSession,thisAcquisition,thisTiffFile,'.tif'));
+
+
+generateRef4Registration(refFileName, refSlices, nPlanes, saveDir);
+
 
