@@ -2,13 +2,13 @@
 % SDL 03/2026
 % Default options
 if ~exist('thisAnimal', 'var')
-    thisAnimal = 'M25138';
+    thisAnimal = 'M25134';
 end
 if ~exist('thisSession', 'var')
-    thisSession = '20260225';
+    thisSession = '20260218';
 end
 if ~exist('thisFileName', 'var')
-    thisFileName = 'Position';
+    thisFileName = 'GrayScreen';
 end
 
 if ~exist('options', 'var')
@@ -37,7 +37,7 @@ if ~isfield(options,'BonsaiPath')
 end
 
 % other Options and Flags
-options.flagAlternativeAcquisition = 1;
+options.flagAlternativeAcquisition = 0;
 options.alternativeRefAcquisition = '_00001_';
 
 
@@ -53,22 +53,21 @@ fileEnd = "_" + digitsPattern(5) + ".tif";
 tempStimulusFiles = erase(theseStimulusFiles,fileEnd);
 uAcquisitions = unique(tempStimulusFiles);
 
-% have the option of using reference file from different acquisition (i.e.,
-% if you want to use reference file from Contrast 1 acquisition, for
-% Contrast 2 acquisition) 
-
-if options.flagAlternativeAcquisition
-    thisRefAcquisition = options.alternativeRefAcquisition;
-else
-    thisRefAcquisition = thisAcquisition;
-end
-
 % loop through acquisitions to generate files 
 
-for acquisitionsNumber = 1:length(uAcquisitions)
+for acquisitionsNumber = 1
 
     thisAcquisition = '_0000' + string(acquisitionsNumber) + '_';
 
+    % have the option of using reference file from different acquisition (i.e.,
+    % if you want to use reference file from Contrast 1 acquisition, for
+    % Contrast 2 acquisition)
+
+    if options.flagAlternativeAcquisition
+        thisRefAcquisition = options.alternativeRefAcquisition;
+    else
+        thisRefAcquisition = thisAcquisition;
+    end
 
     tIdx = find(contains(theseStimulusFiles,thisAcquisition));
     theseStimulusANDAcquisitionFiles = theseStimulusFiles(tIdx);

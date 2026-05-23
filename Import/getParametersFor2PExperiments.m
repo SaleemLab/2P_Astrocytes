@@ -41,7 +41,6 @@ options.wheelDirection = 1; % -1 means forward == negative values; it is 1 for 2
 % Eye Tracker related parameters
 options.EyeSR = 31;
 options.photo_br = 1; % 0 (when the screen had pulse width modulation) or 1 (when it didn't - most recent data)
-options.Eye_pD_thresholds = [20 40];
 options.eyeTrackerParams.eyeRadius = 1.25; %mm Sakatani Isa (2004) model of the effective eye radius based on Remtulla Hallett (1985) measurements of anatomical parameters from C57B1/6J mice eyes.
 options.eyeTrackerParams.blink_thresh_std = 2; % standard deviations from the median
 options.eyeTrackerParams.n_pre = 2;  % samples to remove before the blink

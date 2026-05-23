@@ -11,13 +11,13 @@
 function [success,matfilepath] = MakeCollatedMat2P(thisAnimal,thisSession,thisFileName,options)
 % Default options
 if ~exist('thisAnimal', 'var')
-    thisAnimal = 'M25136';
+    thisAnimal = 'M25134';
 end
 if ~exist('thisSession', 'var')
-    thisSession = '20260219';
+    thisSession = '20260218';
 end
 if ~exist('thisFileName', 'var')
-    thisFileName = 'Contrast';
+    thisFileName = 'GrayScreen';
 end
 if ~exist('thisAcquisition', 'var')
     thisAcquisition = '00001';
@@ -140,23 +140,32 @@ switch(options.FileName)
         fprintf('\nSaved data to %s ...',matfilepath)
         success = 1;
         return 
+    case 'GrayScreen'
+        ; % Gray Screen does not have stim files 
     otherwise
 
         thisStimFileName = fullfile(options.BonsaiPath, [thisAnimal,'_',thisFileName,'_',thisSession,'_',thisAcquisition,'_stimEvents','*']);
         folder_dir = dir(thisStimFileName);
+        if isempty(folder_dir)
+            thisStimFileName = fullfile(options.BonsaiPath, [thisAnimal,'_',thisFileName,'_',thisSession,'_',thisAcquisition,'_2026','*']);
+            folder_dir = dir(thisStimFileName);
+        end
         folder_name = folder_dir.name;
 
 end
 
-thisStimFileName = fullfile(options.BonsaiPath,folder_dir.name);
-stimInfo = readtable(thisStimFileName);
-stimInfo.Properties.VariableNames  = {'Frame','Timestamp', 'Computer_Timestamp', 'StimType', 'StimValue'};
+if ismember(options.FileName,{'GrayScreen'}) % GrayScreen does not have PD
+    save(matfilepath,'EyeDat','WheelDat','twoPDat','options','parseDate');
+else
+    thisStimFileName = fullfile(options.BonsaiPath,folder_dir.name);
+    stimInfo = readtable(thisStimFileName);
+    stimInfo.Properties.VariableNames  = {'Frame','Timestamp', 'Computer_Timestamp', 'StimType', 'StimValue'};
 
-%[stim_info] = load_bonsai_LFPPhotometry_csv(thisStimFile,options);
+    %[stim_info] = load_bonsai_LFPPhotometry_csv(thisStimFile,options);
 
-% Save data
-save(matfilepath,'EyeDat','WheelDat','twoPDat','stimInfo','options','parseDate');
-
+    % Save data
+    save(matfilepath,'EyeDat','WheelDat','twoPDat','stimInfo','options','parseDate');
+end
 
 fprintf('\nSaved data to %s ...',matfilepath)
 success = 1;

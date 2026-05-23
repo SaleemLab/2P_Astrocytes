@@ -85,32 +85,35 @@ options.TwoPSampleRate = 1/(mean(diff(twoPLog.TwoPFrameTime)))*1000;
 
 %%%%%
 % Load PD and find idx of Up and DownPhases
-if isfield(options, 'thisPDfileName') && ~isempty(options.thisPDfileName)
-    thisPDfileName = fullfile(options.BonsaiPath,options.thisPDfileName);
-else
-    thisPDfileName = fullfile(options.BonsaiPath, [thisAnimal,'_',thisFileName,'_',thisSession,'_',thisAcquisition,'_Photodiode','*']);
-    folder_dir = dir(thisPDfileName);
-    if ~isempty(folder_dir)
-        folder_name = folder_dir.name;
-        thisPDfileName = fullfile(options.BonsaiPath,folder_name);
+if ismember(options.FileName,{'GrayScreen'}) % GrayScreen does not have PD
+    ; % do nothing
+else 
+    if isfield(options, 'thisPDfileName') && ~isempty(options.thisPDfileName)
+        thisPDfileName = fullfile(options.BonsaiPath,options.thisPDfileName);
+    else
+        thisPDfileName = fullfile(options.BonsaiPath, [thisAnimal,'_',thisFileName,'_',thisSession,'_',thisAcquisition,'_Photodiode','*']);
+        folder_dir = dir(thisPDfileName);
+        if ~isempty(folder_dir)
+            folder_name = folder_dir.name;
+            thisPDfileName = fullfile(options.BonsaiPath,folder_name);
+        end
     end
+
+    if ~isempty(thisPDfileName)
+        tempPD = readtable(thisPDfileName);
+        tempPD.Properties.VariableNames  = {'PDOutput','LastSyncPulse', 'ArduinoTime', 'BonsaiTime','RenderFrameCount'};
+    end
+
+    % Interpolate to twoPFrameTime
+    PD.PDOutput = interp1(tempPD.ArduinoTime, tempPD.PDOutput, twoPLog.TwoPFrameTime);
+
+    % Get the photodiode change
+    [upPhases, downPhases] = PDUpDownPhases(PD.PDOutput,options);
+    % May not return to baseline, in which case length(EyedownPhases) = length(EyeupPhases)-1
+    % if length(EyedownPhases) == length(EyeupPhases)-1
+    %     upPhases = upPhases(1:end-1);
+    % end
 end
-
-if ~isempty(thisPDfileName) 
-    tempPD = readtable(thisPDfileName); 
-    tempPD.Properties.VariableNames  = {'PDOutput','LastSyncPulse', 'ArduinoTime', 'BonsaiTime','RenderFrameCount'};
-end 
-
-% Interpolate to twoPFrameTime 
-PD.PDOutput = interp1(tempPD.ArduinoTime, tempPD.PDOutput, twoPLog.TwoPFrameTime);
-
-% Get the photodiode change 
-[upPhases, downPhases] = PDUpDownPhases(PD.PDOutput,options);
-% May not return to baseline, in which case length(EyedownPhases) = length(EyeupPhases)-1
-% if length(EyedownPhases) == length(EyeupPhases)-1
-%     upPhases = upPhases(1:end-1);
-% end
-
 %%%%%
 % Load the EyeTimestamps and EyeData from the bonsai file
 thisEyeTimestampsfileName = [];
@@ -146,24 +149,29 @@ if ~isempty(thisEyeTimestampsfileName) && ~isempty(thisEyeDatafileName)
     EyeTimeStamps = readtable(thisEyeTimestampsfileName); 
     EyeTimeStamps.Properties.VariableNames  = {'EyeCamTime','LastSyncPulseTime', 'ArduinoTime'};
 
+        % Process eye data
+    [tempEyeDat, EyeTrackerParams] = EyePreprocess_LFPPM(tempEyeDat, options.eyeTrackerParams);
+
     % Align EyeData
     [EyeDat] = alignEyeData(tempEyeDat,EyeTimeStamps,twoPLog);
     
-    % Process eye data
-%     [EyeDat, EyeTrackerParams] = EyePreprocess_LFPPM(EyeDat, options.eyeTrackerParams);
+
    % tTime = (EyeDat.eyeMsSinceStartOfDay-EyeDat.eyeMsSinceStartOfDay(1)); % Convert to s since beginning of recording
 
 
-    % Store
-    EyeDat.SampleRate = options.TwoPSampleRate;
-    EyeDat.EyeFileName = [thisEyeTimestampsfileName,thisEyeDatafileName];
-%     EyeDat.EyeTrackerParams = EyeTrackerParams;
-    EyeDat.upPhases = upPhases;
-    EyeDat.downPhases = downPhases;
+   % Store
+   EyeDat.SampleRate = options.TwoPSampleRate;
+   EyeDat.EyeFileName = [thisEyeTimestampsfileName,thisEyeDatafileName];
+   %     EyeDat.EyeTrackerParams = EyeTrackerParams;
+   if ismember(options.FileName,{'GrayScreen'}) % GrayScreen does not have PD
+       ; % do nothing
+   else
+       EyeDat.upPhases = upPhases;
+       EyeDat.downPhases = downPhases;
+   end
 
-
-%     EyeDat.ttl_timestamps = tTime(EyeupPhases)./1000; % convert from ms to s
-%     EyeDat.data = EyeDat(:,{'EyeX_deg','EyeY_deg','EyeArea','EyeArea_mm2','valid'});
+   %     EyeDat.ttl_timestamps = tTime(EyeupPhases)./1000; % convert from ms to s
+   %     EyeDat.data = EyeDat(:,{'EyeX_deg','EyeY_deg','EyeArea','EyeArea_mm2','valid'});
 %     EyeDat.data.timestamps = tTime./1000; % Add time stamps in s
 end
 %%%
@@ -204,10 +212,13 @@ end
     % Interpolate to twoPLog.TimeFrame 
     WheelDat.newSpeed = interp1(tempWheelDat.ArduinoTime,WheelDat.data.Speed,twoPLog.TwoPFrameTime,'linear','extrap');
     WheelDat.newSpeed = WheelDat.newSpeed';
-    % Get PD 
-    WheelDat.upPhases = upPhases;
-    WheelDat.downPhases = downPhases;
-
+    % Get PD
+    if ismember(options.FileName,{'GrayScreen'}) % GrayScreen does not have PD
+        ; % do nothing
+    else
+        WheelDat.upPhases = upPhases;
+        WheelDat.downPhases = downPhases;
+    end
 %%%%%%%
 % Load ROI measurements
 % First define the ROI matrix variable 
@@ -266,6 +277,8 @@ for thisPlane = 1:options.nPlanes
 
     if length(planeFrameTime) > length(ROImatrix)
         planeFrameTime(:,length(ROImatrix)+1:end) = [];
+    elseif length(planeFrameTime) < length(ROImatrix)
+        ROImatrix(:,length(planeFrameTime)+1:end) = [];
     end 
 
     % find idx of ROI for the correct plane
@@ -317,11 +330,14 @@ twoPDat.ROIsize = ROIsize;
 twoPDat.TimeVector = ROItimeVector;
 twoPDat.planeIdMatrix = ROIid;
 twoPDat.planeFrameTime = planeFrameTime;
-twoPDat.upPhases = upPhases;
-twoPDat.downPhases = downPhases;    
 twoPDat.SampleRate = options.TwoPSampleRate;
-
-% assign new timeVector to other variables also 
+if ismember(options.FileName,{'GrayScreen'}) % GrayScreen does not have PD
+    ; % do nothing
+else
+    twoPDat.upPhases = upPhases;
+    twoPDat.downPhases = downPhases;
+end
+% assign new timeVector to other variables also
 WheelDat.timeVector = ROItimeVector;
 EyeDat.timeVector = ROItimeVector;
 

@@ -1,18 +1,18 @@
 % function [roiInfo] = calculateRoiFluorescence(dirRoiFile,dirTiffFile)
 %UNTITLED3 Summary of this function goes here
-% SDL 03/2026 
+% SDL 03/2026
 if ~exist('thisAnimal', 'var')
-    thisAnimal = 'M25137';
+    thisAnimal = 'M25134';
 end
 if ~exist('thisSession', 'var')
-    thisSession = '20260317';
+    thisSession = '20260218';
 end
 if ~exist('thisFileName', 'var')
-    thisFileName = 'Position';
+    thisFileName = 'GrayScreen';
 end
 
 if ~exist('thisRoiSetAcquisition', 'var')
-    thisRoiSetAcquisition = '__00002';
+    thisRoiSetAcquisition = '__00001';
 end
 
 if ~exist('options', 'var')
@@ -70,78 +70,93 @@ nPlanes = 4;
 
 % create variables of interest
 
-
-for thisAcquisition = 1:length(uAcquisitions)
+%%
+for thisAcquisition = 1 %:length(uAcquisitions)
     for thisPlane = 1:nPlanes
-        
+
         % define directories for Roi File - currently independent of
         % Acquisition number, using the same ROI set for both acquisitions
         % - will need to standardise
         dirRoiFile = fullfile(options.concatPath,'RoiSets', append(upper(thisAnimal),'_',thisFileName, '_', ...
             string(thisSession),thisRoiSetAcquisition,'__plane_',string(thisPlane),'_RoiSet.zip'));
-        
+
         % load the ROI stats and the Tiff video
-        roiStats = ReadImageJROI(dirRoiFile);
-        nRois = length(roiStats);
-        for thisConcatFile = 1: length(uConcatFiles)
-
-            % define directories for Tiff
-            dirTiffFile = fullfile(options.concatPath, append(upper(thisAnimal),'_',thisFileName, '_', ...
-                string(thisSession),'__0000',string(thisAcquisition),'__',string(thisConcatFile),'plane_',string(thisPlane),'_registered.tif'));
+        % if only one Roi, and not an RoiSet, try different syntax
+        try  roiStats = ReadImageJROI(dirRoiFile);
+        catch dirRoiFile = fullfile(options.concatPath,'RoiSets', append(upper(thisAnimal),'_',thisFileName, '_', ...
+                string(thisSession),thisRoiSetAcquisition,'__plane_',string(thisPlane),'_RoiSet.roi'));
+            roiStats = ReadImageJROI(dirRoiFile);
 
 
-            % loadTiffFile
-            tic
-            currentTiff = tiffreadVolume(dirTiffFile);
-            toc
+            nRois = length(roiStats);
+            for thisConcatFile = 1:length(uConcatFiles)
 
-            % pre allocate variables 
-            troiSum = zeros(nRois,size(currentTiff,3));
-            mask = zeros(size(currentTiff,1),size(currentTiff,2),nRois);
+                % define directories for Tiff
 
-            % show the first image of the video
-            standardImg = imagesc(currentTiff(:,:,1));
+                dirTiffFile = fullfile(options.concatPath, append(upper(thisAnimal),'_',thisFileName, '_', ...
+                    string(thisSession),'__0000',string(thisAcquisition),'__',string(thisConcatFile),'plane_',string(thisPlane),'_registered.tif'));
+                if ~isfile(dirTiffFile)
+                    warning("this file %s does not exist",dirTiffFile)
+                else
 
-            % use the vertex position to draw an ROI
-            for thisRoi = 1:size(roiStats,2)
-                roi = drawpolygon('Position',roiStats{1,thisRoi}.mnCoordinates);
-                mask(:,:,thisRoi)= createMask(roi);
-                clear roi
+                    % loadTiffFile
+                    tic
+                    currentTiff = tiffreadVolume(dirTiffFile);
+                    toc
+
+                    % pre allocate variables
+                    troiSum = zeros(nRois,size(currentTiff,3));
+                    mask = zeros(size(currentTiff,1),size(currentTiff,2),nRois);
+
+                    % show the first image of the video
+                    standardImg = imagesc(max(currentTiff,[],3));
+
+                    % use the vertex position to draw an ROI
+                    for thisRoi = 1:size(roiStats,2)
+                        try roi = drawpolygon('Position',roiStats{1,thisRoi}.mnCoordinates);
+                        catch roi = drawpolygon('Position',roiStats(1,thisRoi).mnCoordinates);
+                            mask(:,:,thisRoi)= createMask(roi);
+                            clear roi
+                        end
+
+                        for thisRoi = 1:size(roiStats,2)
+                            try tRoiPosition(thisRoi,:) = {roiStats{1,thisRoi}.mnCoordinates};
+                            catch tRoiPosition(thisRoi,:) = {roiStats(1,thisRoi).mnCoordinates};
+                            end
+
+                            % transform mask into matrix
+                            mask = single(mask);
+
+                            % calculate the sum fluorescence within each ROI (+ record how many pixels
+                            % in each ROI); can use these info later to calculate mean fluorescence
+                            for thisRoi = 1:size(mask,3)
+                                troiSum(thisRoi,:) = sum(pagemtimes(single(currentTiff),squeeze(mask(:,:,thisRoi))),[1 2]);
+                                roiSize(thisRoi) = size(find(mask(:,:,thisRoi)),1);
+                            end
+
+
+                            % Store info across concat files
+                            roiSum{thisConcatFile,:} = troiSum;
+
+                            clear tRoiSum
+
+                        end
+                    end
+                    % Store info across plane files
+                    roiInfo.roiStats(1:nRois,:) = roiStats';
+                    roiInfo.roiSum = roiSum;
+                    roiInfo.roiSize = roiSize;
+
+
+                    % Define Saving directory depending on plane and acquisition
+                    savingDir = fullfile(options.matToppath,append(thisAnimal,'_',thisFileName,'_',thisSession,'_0000',string(thisAcquisition),'_plane_',string(thisPlane),'RoiFluorescence.mat'));
+
+                    % Save data
+                    save(savingDir,'roiInfo');
+
+                    clear roiInfo roiSum roiSize
+                end
             end
-
-            for thisRoi = 1:size(roiStats,2)
-                tRoiPosition(thisRoi,:) = {roiStats{1,thisRoi}.mnCoordinates};
-            end
-
-            % transform mask into matrix
-            mask = single(mask);
-
-            % calculate the sum fluorescence within each ROI (+ record how many pixels
-            % in each ROI); can use these info later to calculate mean fluorescence
-            for thisRoi = 1:size(mask,3)
-                troiSum(thisRoi,:) = sum(pagemtimes(single(currentTiff),squeeze(mask(:,:,thisRoi))),[1 2]);
-                roiSize(thisRoi) = size(find(mask(:,:,thisRoi)),1);
-            end
-
-
-            % Store info across concat files
-            roiSum{thisConcatFile,:} = troiSum;
-
-            clear tRoiSum
-
         end
-        % Store info across plane files
-        roiInfo.roiStats(1:nRois,:) = roiStats';
-        roiInfo.roiSum = roiSum;
-        roiInfo.roiSize = roiSize;
-        
-        
-        % Define Saving directory depending on plane and acquisition
-        savingDir = fullfile(options.matToppath,append(thisAnimal,'_',thisFileName,'_',thisSession,'_0000',string(thisAcquisition),'_plane_',string(thisPlane),'RoiFluorescence.mat'));
-        
-        % Save data
-        save(savingDir,'roiInfo');
-
-        clear roiInfo roiSum roiSize
     end
 end
